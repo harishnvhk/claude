@@ -35,7 +35,10 @@
     border: 2px solid #0f0;
     box-shadow: 0 0 20px #0f0, inset 0 0 20px rgba(0,255,0,0.1);
     image-rendering: pixelated;
+    max-width: 95vw;
+    height: auto;
   }
+  #hud { max-width: 95vw; }
   #info {
     margin-top: 12px;
     font-size: 12px;
@@ -118,9 +121,10 @@ const restartBtn = document.getElementById('restart');
 
 const keys = {};
 window.addEventListener('keydown', e => {
-  keys[e.key.toLowerCase()] = true;
-  if (e.key === ' ') e.preventDefault();
-  if (e.key.toLowerCase() === 'p') paused = !paused;
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (e.key === ' ' || e.key.startsWith('Arrow')) e.preventDefault();
+  if (k === 'p' && !e.repeat && !gameOver) paused = !paused;
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
@@ -236,7 +240,7 @@ function update() {
 
   // enemy bullets vs player
   enemyBullets.forEach(b => {
-    if (rectHit(b, player)) {
+    if (!gameOver && rectHit(b, player)) {
       b.y = H + 100;
       hitPlayer();
     }
@@ -245,7 +249,7 @@ function update() {
 
   // enemies reach player
   enemies.forEach(e => {
-    if (e.alive && e.y + e.h >= player.y) {
+    if (!gameOver && e.alive && e.y + e.h >= player.y) {
       hitPlayer();
       e.alive = false;
       explode(e.x + e.w/2, e.y + e.h/2, '#f00');
@@ -259,10 +263,12 @@ function update() {
   });
 
   // wave clear
-  if (enemies.every(e => !e.alive)) {
+  if (enemies.length > 0 && enemies.every(e => !e.alive)) {
     wave++;
     enemies = [];
+    enemyBullets = [];
     enemyDir = 1;
+    enemyShotTimer = 0;
     spawnWave();
     updateHUD();
   }
@@ -273,6 +279,7 @@ function rectHit(a, b) {
 }
 
 function hitPlayer() {
+  if (gameOver) return;
   lives--;
   explode(player.x + player.w/2, player.y + player.h/2, '#0ff');
   updateHUD();
